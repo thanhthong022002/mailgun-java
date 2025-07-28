@@ -2,6 +2,7 @@ package com.mailgun.model.logs;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
 import lombok.Builder;
@@ -32,7 +33,7 @@ public class LogItem {
      * Timestamp of the event (RFC 3339 or RFC 2822 format). Required.
      */
     @JsonProperty("@timestamp")
-    String timestamp;
+    ZonedDateTime timestamp;
     /**
      * Log level string.
      */
@@ -40,10 +41,12 @@ public class LogItem {
     String logLevel;
     /**
      * Account object. Contains information about the account associated with the event. Optional.
+     * Key: id
      */
     Map<String, Object> account;
     /**
      * List of campaign objects associated with the event. Optional.
+     * The keys of map: id, name
      */
     List<Map<String, Object>> campaigns;
     /**
@@ -112,7 +115,7 @@ public class LogItem {
      * User variables. Optional.
      */
     @JsonProperty("user-variables")
-    String userVariables;
+    Map<String, String> userVariables;
     /**
      * Flags object. Contains event flags. Optional.
      */
