@@ -115,7 +115,7 @@ public class LogItem {
      * User variables. Optional.
      */
     @JsonProperty("user-variables")
-    Map<String, String> userVariables;
+    String userVariables;
     /**
      * Flags object. Contains event flags. Optional.
      */

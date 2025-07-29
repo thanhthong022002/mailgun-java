@@ -5,6 +5,10 @@ All _notable_ changes to this project will be documented in this file.
 The format is based on _[Keep a Changelog][keepachangelog]_, and this project
 adheres to _[Semantic Versioning][semver]_.
 
+## [10.0.5] (released: 2025-07-28)
+### Updated
+- Update logitem model. (revert back to string userVariables)
+
 ## [10.0.4] (released: 2025-07-28)
 ### Updated
 - Update logitem model.
