@@ -7,10 +7,11 @@
     <groupId>com.mailgun</groupId>
     <artifactId>mailgun-java</artifactId>
     <!--
-        xomad build of upstream 2.4.2. Bump only the -xomad-N suffix for a re-release:
-        Nexus release coordinates are immutable, so a defective publish is corrected by -2.
+        xomad build of upstream 2.4.2. Any new xomad build on the same upstream base bumps only
+        the -xomad-N suffix: Nexus release coordinates are immutable, so a published version is
+        never redeployed, it is superseded.
     -->
-    <version>2.4.2-xomad-1</version>
+    <version>2.4.2-xomad-2</version>
     <packaging>jar</packaging>
 
     <name>${project.groupId}:${project.artifactId}</name>
