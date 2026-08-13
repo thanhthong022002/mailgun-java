@@ -3,6 +3,8 @@ package com.mailgun.api.v3;
 import com.mailgun.api.MailgunApi;
 import com.mailgun.model.PagingWithPivot;
 import com.mailgun.model.ResponseWithMessage;
+import com.mailgun.model.templates.CopyTemplateRequest;
+import com.mailgun.model.templates.CopyTemplateResponse;
 import com.mailgun.model.templates.TemplateAllVersionsResponse;
 import com.mailgun.model.templates.TemplateRequest;
 import com.mailgun.model.templates.TemplateResponse;
@@ -24,25 +26,26 @@ import feign.Response;
  * Templates Api.
  * </p>
  * <p>
- * This API allows you to store predefined templates and use them to send messages using the Sending API.
+ * Domain-scoped templates ({@code /v3/{domain}/templates}). For account-level templates across all domains,
+ * use {@link com.mailgun.api.v4.MailgunAccountTemplatesApi} ({@code /v4/templates}).
  * </p>
  * <p>
  * The API has the following limitations:
  * </p>
  * <pre>
  * 100 templates per domain
- * 10 versions per template
+ * 40 versions per template
  * 100Kb max template size
  * </pre>
  *
- * @see <a href="https://documentation.mailgun.com/en/latest/api-templates.html">Templates</a>
+ * @see <a href="https://documentation.mailgun.com/docs/mailgun/api-reference/send/mailgun/domain-templates">Domain Templates</a>
  */
 @Headers("Accept: application/json")
 public interface MailgunTemplatesApi extends MailgunApi {
 
     /**
      * <p>
-     * Returns a list of stored templates for the domain (limit to 10 entries).
+     * Returns a list of templates for the domain.
      * </p>
      *
      * @param domain Name of the domain
@@ -53,7 +56,7 @@ public interface MailgunTemplatesApi extends MailgunApi {
 
     /**
      * <p>
-     * Returns a list of stored templates for the domain (limit to 10 entries).
+     * Returns a list of templates for the domain.
      * </p>
      *
      * @param domain Name of the domain
@@ -88,19 +91,24 @@ public interface MailgunTemplatesApi extends MailgunApi {
 
     /**
      * <p>
-     * Returns metadata information about a stored template.
+     * Returns metadata information about the stored template specified in the url.
+     * If the active flag is provided, the content of the active version of the template is returned.
+     * If the {@code version_name} flag is provided, version information is included; see
+     * {@link #getTemplateWithVersion(String, String, String)}.
      * </p>
      *
      * @param domain Name of the domain
      * @param name   Name of the template
      * @return {@link TemplateResponse}
+     * @see <a href="https://documentation.mailgun.com/docs/mailgun/api-reference/send/mailgun/domain-templates/get-v3--domain-name--templates--template-name-">Get template</a>
      */
     @RequestLine("GET /{domain}/templates/{name}")
     TemplateResponse getTemplate(@Param("domain") String domain, @Param("name") String name);
 
     /**
      * <p>
-     * Returns metadata information about a stored template.
+     * Returns metadata information about the stored template specified in the url.
+     * If the active flag is provided, the content of the active version of the template is returned.
      * </p>
      *
      * @param domain Name of the domain
@@ -136,6 +144,35 @@ public interface MailgunTemplatesApi extends MailgunApi {
 
     /**
      * <p>
+     * Returns template metadata with the version identified by {@code version_name} included in the response.
+     * </p>
+     *
+     * @param domain      Name of the domain
+     * @param name        Name of the template
+     * @param versionName Version tag/name
+     * @return {@link TemplateWithVersionResponse}
+     * @see <a href="https://documentation.mailgun.com/docs/mailgun/api-reference/send/mailgun/domain-templates/get-v3--domain-name--templates--template-name-">Get template</a>
+     */
+    @RequestLine("GET /{domain}/templates/{name}?version_name={versionName}")
+    TemplateWithVersionResponse getTemplateWithVersion(@Param("domain") String domain, @Param("name") String name,
+                                                       @Param("versionName") String versionName);
+
+    /**
+     * <p>
+     * Returns template metadata with the version identified by {@code version_name} included in the response.
+     * </p>
+     *
+     * @param domain      Name of the domain
+     * @param name        Name of the template
+     * @param versionName Version tag/name
+     * @return {@link Response}
+     */
+    @RequestLine("GET /{domain}/templates/{name}?version_name={versionName}")
+    Response getTemplateWithVersionFeignResponse(@Param("domain") String domain, @Param("name") String name,
+                                                 @Param("versionName") String versionName);
+
+    /**
+     * <p>
      * This API stores a new template, including its name, description and (optionally) the template content.
      * </p>
      * <p>
@@ -168,7 +205,7 @@ public interface MailgunTemplatesApi extends MailgunApi {
 
     /**
      * <p>
-     * Update the metadata information of the template.
+     * Update the description of a template.
      * </p>
      *
      * @param domain      Name of the domain
@@ -182,7 +219,7 @@ public interface MailgunTemplatesApi extends MailgunApi {
 
     /**
      * <p>
-     * Update the metadata information of the template.
+     * Update the description of a template.
      * </p>
      *
      * @param domain      Name of the domain
@@ -222,7 +259,7 @@ public interface MailgunTemplatesApi extends MailgunApi {
 
     /**
      * <p>
-     * Delete all stored templates for the domain.
+     * Delete all templates and their versions for the domain.
      * </p>
      *
      * @param domain Name of the domain
@@ -233,7 +270,7 @@ public interface MailgunTemplatesApi extends MailgunApi {
 
     /**
      * <p>
-     * Delete all stored templates for the domain.
+     * Delete all templates and their versions for the domain.
      * </p>
      *
      * @param domain Name of the domain
@@ -244,7 +281,7 @@ public interface MailgunTemplatesApi extends MailgunApi {
 
     /**
      * <p>
-     * Returns a list of stored versions of the template (limit to 10 entries).
+     * Returns a paginated list of template versions.
      * </p>
      *
      * @param domain       Name of the domain
@@ -256,7 +293,7 @@ public interface MailgunTemplatesApi extends MailgunApi {
 
     /**
      * <p>
-     * Returns a list of stored versions of the template (limit to 10 entries).
+     * Returns a paginated list of template versions.
      * </p>
      *
      * @param domain       Name of the domain
@@ -268,7 +305,7 @@ public interface MailgunTemplatesApi extends MailgunApi {
 
     /**
      * <p>
-     * Returns a list of stored versions of the template.
+     * Returns a paginated list of template versions.
      * </p>
      *
      * @param domain       Name of the domain
@@ -281,7 +318,7 @@ public interface MailgunTemplatesApi extends MailgunApi {
 
     /**
      * <p>
-     * Returns a list of stored versions of the template.
+     * Returns a paginated list of template versions.
      * </p>
      *
      * @param domain       Name of the domain
@@ -294,7 +331,7 @@ public interface MailgunTemplatesApi extends MailgunApi {
 
     /**
      * <p>
-     * Retrieve information and content of specified version of the template.
+     * Retrieve the information and content of the specified version of a template.
      * </p>
      *
      * @param domain       Name of the domain
@@ -307,7 +344,7 @@ public interface MailgunTemplatesApi extends MailgunApi {
 
     /**
      * <p>
-     * Retrieve information and content of specified version of the template.
+     * Retrieve the information and content of the specified version of a template.
      * </p>
      *
      * @param domain       Name of the domain
@@ -320,7 +357,8 @@ public interface MailgunTemplatesApi extends MailgunApi {
 
     /**
      * <p>
-     * Create a new version of a template. If the template does not contain any other versions, the first version becomes active.
+     * Adds a new template version. If the template doesn't contain any other versions, the first version becomes active.
+     * A template can store up to 40 versions.
      * </p>
      *
      * @param domain       Name of the domain
@@ -334,7 +372,8 @@ public interface MailgunTemplatesApi extends MailgunApi {
 
     /**
      * <p>
-     * Create a new version of a template. If the template does not contain any other versions, the first version becomes active.
+     * Adds a new template version. If the template doesn't contain any other versions, the first version becomes active.
+     * A template can store up to 40 versions.
      * </p>
      *
      * @param domain       Name of the domain
@@ -348,7 +387,8 @@ public interface MailgunTemplatesApi extends MailgunApi {
 
     /**
      * <p>
-     * Update information or content of the specific version of the template.
+     * Update information or content of the specific template version.
+     * Existing fields not included in the request will not be changed.
      * </p>
      *
      * @param domain       Name of the domain
@@ -364,7 +404,8 @@ public interface MailgunTemplatesApi extends MailgunApi {
 
     /**
      * <p>
-     * Update information or content of the specific version of the template.
+     * Update information or content of the specific template version.
+     * Existing fields not included in the request will not be changed.
      * </p>
      *
      * @param domain       Name of the domain
@@ -379,7 +420,9 @@ public interface MailgunTemplatesApi extends MailgunApi {
                                                         @Param("tag") String tag, UpdateTemplateVersionRequest request);
 
     /**
-     * Delete a specific version of the template.
+     * <p>
+     * Delete a specific template version.
+     * </p>
      *
      * @param domain          Name of the domain
      * @param templateName    Name of the template
@@ -390,7 +433,9 @@ public interface MailgunTemplatesApi extends MailgunApi {
     TemplateVersionResponse deleteSpecificTemplateVersion(@Param("domain") String domain, @Param("templateName") String templateName, @Param("templateVersion") String templateVersion);
 
     /**
-     * Delete a specific version of the template.
+     * <p>
+     * Delete a specific template version.
+     * </p>
      *
      * @param domain          Name of the domain
      * @param templateName    Name of the template
@@ -399,5 +444,59 @@ public interface MailgunTemplatesApi extends MailgunApi {
      */
     @RequestLine("DELETE /{domain}/templates/{templateName}/versions/{templateVersion}")
     Response deleteSpecificTemplateVersionFeignResponse(@Param("domain") String domain, @Param("templateName") String templateName, @Param("templateVersion") String templateVersion);
+
+    /**
+     * <p>
+     * Copies an existing version into a new version with the provided name.
+     * </p>
+     *
+     * @param domain          Name of the domain
+     * @param templateName    Name of the template
+     * @param versionName     Name of the version to copy
+     * @param newVersionName  Name of the new version
+     * @return {@link TemplateWithMessageResponse}
+     */
+    @RequestLine("PUT /{domain}/templates/{templateName}/versions/{versionName}/copy/{newVersionName}")
+    TemplateWithMessageResponse copyTemplateVersion(@Param("domain") String domain, @Param("templateName") String templateName,
+                                                    @Param("versionName") String versionName, @Param("newVersionName") String newVersionName);
+
+    /**
+     * <p>
+     * Copies an existing version into a new version with the provided name.
+     * </p>
+     *
+     * @param domain          Name of the domain
+     * @param templateName    Name of the template
+     * @param versionName     Name of the version to copy
+     * @param newVersionName  Name of the new version
+     * @return {@link Response}
+     */
+    @RequestLine("PUT /{domain}/templates/{templateName}/versions/{versionName}/copy/{newVersionName}")
+    Response copyTemplateVersionFeignResponse(@Param("domain") String domain, @Param("templateName") String templateName,
+                                             @Param("versionName") String versionName, @Param("newVersionName") String newVersionName);
+
+    /**
+     * {@code PUT /v3/{domain_name}/templates/{template_name}/copy}: copy into other accounts ({@code application/json}).
+     */
+    @Headers({"Content-Type: application/json", "Accept: application/json"})
+    @RequestLine("PUT /{domain}/templates/{templateName}/copy")
+    CopyTemplateResponse copyTemplate(@Param("domain") String domain, @Param("templateName") String templateName,
+                                      CopyTemplateRequest request);
+
+    @Headers({"Content-Type: application/json", "Accept: application/json"})
+    @RequestLine("PUT /{domain}/templates/{templateName}/copy")
+    Response copyTemplateFeignResponse(@Param("domain") String domain, @Param("templateName") String templateName,
+                                       CopyTemplateRequest request);
+
+    /**
+     * {@code PUT /v3/{domain_name}/templates/{template_name}/rename/{new_template_name}}.
+     */
+    @RequestLine("PUT /{domain}/templates/{templateName}/rename/{newTemplateName}")
+    TemplateWithMessageResponse renameTemplate(@Param("domain") String domain, @Param("templateName") String templateName,
+                                                 @Param("newTemplateName") String newTemplateName);
+
+    @RequestLine("PUT /{domain}/templates/{templateName}/rename/{newTemplateName}")
+    Response renameTemplateFeignResponse(@Param("domain") String domain, @Param("templateName") String templateName,
+                                          @Param("newTemplateName") String newTemplateName);
 
 }

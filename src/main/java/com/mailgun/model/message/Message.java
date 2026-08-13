@@ -25,9 +25,14 @@ import lombok.ToString;
 import static com.mailgun.util.Constants.FIELD_CANNOT_BE_NULL_OR_EMPTY;
 
 /**
- * The object is used for sending messages(emails) using Mailgun API.
+ * Multipart form model for {@code POST /v3/{domain_name}/messages} (Mailgun Sending API 3.0.0).
+ * <p>
+ * You must provide one of: {@code text}, {@code html}, {@code amp-html}, or {@code template}.
+ * Send options (parameter names starting with {@code o:}, {@code h:}, {@code v:}, or {@code t:}) are limited to
+ * {@value com.mailgun.util.Constants#MAILGUN_SEND_OPTIONS_MAX_BYTES} bytes in total.
+ * </p>
  *
- * @see <a href="https://documentation.mailgun.com/en/latest/api-sending.html#sending">field-explanation</a>
+ * @see <a href="https://documentation.mailgun.com/docs/mailgun/api-reference/send/mailgun/messages/post-v3--domain-name--messages">Send an email</a>
  */
 @Getter
 @ToString
@@ -36,9 +41,8 @@ import static com.mailgun.util.Constants.FIELD_CANNOT_BE_NULL_OR_EMPTY;
 public class Message {
 
     /**
-     * <p>
-     * Email address for From header.
-     * </p>
+     * Email address of the {@code From} header (optional friendly name: {@code "Friendly Name <addr@example.com>"}).
+     * Not required when sending with a template that defines {@code From}, but any value here overrides the template.
      */
     String from;
 
@@ -64,9 +68,7 @@ public class Message {
     Set<String> bcc;
 
     /**
-     * <p>
-     * Message subject.
-     * </p>
+     * Message subject. Not required when the template defines a subject; a provided value overrides the template.
      */
     String subject;
 
@@ -83,6 +85,16 @@ public class Message {
      * </p>
      */
     String html;
+
+    /**
+     * <p>
+     * AMP part of the message. Follow Google guidelines to compose and send AMP emails.
+     * </p>
+     *
+     * @see <a href="https://documentation.mailgun.com/docs/mailgun/api-reference/send/mailgun/messages/post-v3--domain-name--messages">Send an email</a>
+     */
+    @FormProperty("amp-html")
+    String ampHtml;
 
     /**
      * <p>
@@ -107,14 +119,15 @@ public class Message {
     Set<FormData> formData;
 
     /**
-     * <p>
-     * Attachment with inline disposition.
-     * </p>
-     * <p>
-     * You can post multiple inline values.
-     * </p>
+     * Attachment with inline disposition (for example inline images). You can post multiple {@code inline} parts.
      */
     Set<File> inline;
+
+    /**
+     * Inline attachments as {@link FormData} (same form field name as file-based {@link #inline}).
+     */
+    @FormProperty("inline")
+    Set<FormData> inlineFormData;
 
     /**
      * <p>
@@ -132,9 +145,7 @@ public class Message {
     String templateVersion;
 
     /**
-     * <p>
-     * Rendered template in the text part of the message in case of template sending.
-     * </p>
+     * When set to {@code yes}, generates a plain-text MIME part from the template alongside HTML ({@code t:text=yes}).
      */
     @FormProperty("t:text")
     String renderTemplate;
@@ -144,7 +155,7 @@ public class Message {
      * Tag string.
      * </p>
      *
-     * @see <a href="https://documentation.mailgun.com/en/latest/user_manual.html#tagging-1">Tagging</a>
+     * @see <a href="https://documentation.mailgun.com/docs/mailgun/user-manual/tracking-messages/track-tagging">Tagging</a>
      */
     @FormProperty("o:tag")
     Set<String> tag;
@@ -158,33 +169,72 @@ public class Message {
     String dkim;
 
     /**
-     * <p>
-     * Desired time of delivery.
-     * </p>
-     *
-     * <p>
-     * Note: Messages can be scheduled for a maximum of 3 days in the future.
-     * </p>
+     * Second domain key for DKIM signing, formatted as {@code signing_domain/selector} (for example {@code example.com/s1}).
+     */
+    @FormProperty("o:secondary-dkim")
+    String secondaryDkim;
+
+    /**
+     * Public alias for {@link #secondaryDkim}, formatted as {@code public_signing_domain/selector}.
+     * Requires {@link #secondaryDkim} to be set.
+     */
+    @FormProperty("o:secondary-dkim-public")
+    String secondaryDkimPublic;
+
+    /**
+     * Scheduled delivery time in RFC-2822 format. Plan and domain {@code message_ttl} limit how far ahead you can schedule.
      */
     @FormProperty("o:deliverytime")
     String deliveryTime;
+
+    /**
+     * Maximum time window for delivering the message, for example {@code 1h30m}, {@code 30m}, or {@code 24h}
+     * (minimum {@code 5m}, maximum {@code 24h}). For scheduled mail, the window starts at the scheduled time.
+     */
+    @FormProperty("o:deliver-within")
+    String deliverWithin;
+
+    /**
+     * Send Time Optimization window, for example {@code 24h} (minimum {@code 24h}, maximum {@code 72h}).
+     */
+    @FormProperty("o:deliverytime-optimize-period")
+    String deliveryTimeOptimizePeriod;
+
+    /**
+     * Timezone Optimization preferred local delivery time ({@code HH:mm} or {@code hh:mmaa}).
+     */
+    @FormProperty("o:time-zone-localize")
+    String timeZoneLocalize;
+
+    /**
+     * <p>
+     * X-Mailgun-Deliver-Within header - delivery deadline for the message.
+     * </p>
+     * <p>
+     * Expects a Golang encoded duration value in range [5m;24h].
+     * </p>
+     * <p>
+     * If specified, an explicit deadline is set for the corresponding smtp2 job
+     * and deliver-by field is added to the fired accepted event with the deadline value.
+     * </p>
+     */
+    @FormProperty("h:X-Mailgun-Deliver-Within")
+    String xMailgunDeliverWithin;
 
     /**
      * <p>
      * Enables sending in test mode.
      * </p>
      *
-     * @see <a href="https://documentation.mailgun.com/en/latest/user_manual.html#manual-testmode">Sending in Test Mode</a>
+     * @see <a href="https://documentation.mailgun.com/docs/mailgun/user-manual/sending-messages/test-mode">Sending in Test Mode</a>
      */
     @FormProperty("o:testmode")
     String testMode;
 
     /**
-     * <p>
-     * Toggles tracking on a per-message basis.
-     * </p>
+     * Toggles click and open tracking on a per-message basis ({@code yes}, {@code no}, {@code true}, {@code false}, {@code htmlonly}).
      *
-     * @see <a href="https://documentation.mailgun.com/en/latest/user_manual.html#tracking-messages">Tracking Messages</a>
+     * @see <a href="https://documentation.mailgun.com/docs/mailgun/api-reference/send/mailgun/messages/post-v3--domain-name--messages">Send an email</a>
      */
     @FormProperty("o:tracking")
     String tracking;
@@ -243,6 +293,42 @@ public class Message {
     String skipVerification;
 
     /**
+     * Dedicated sending IP owned by your account.
+     */
+    @FormProperty("o:sending-ip")
+    String sendingIp;
+
+    /**
+     * IP pool identifier; the message is sent from an IP in that pool.
+     */
+    @FormProperty("o:sending-ip-pool")
+    String sendingIpPool;
+
+    /**
+     * Places the open-tracking pixel at the top of the HTML message ({@code yes}, {@code no}, {@code true}, {@code false}, {@code htmlonly}).
+     */
+    @FormProperty("o:tracking-pixel-location-top")
+    String trackingPixelLocationTop;
+
+    /**
+     * Comma-separated {@code X-Mailgun} header names to strip from the delivered message, or {@code all} for all such headers.
+     */
+    @FormProperty("o:suppress-headers")
+    String suppressHeaders;
+
+    /**
+     * <p>
+     * Sends a copy of successfully delivered messages to the specified URL via HTTP POST.
+     * The request uses Content-Type: application/mime and contains the exact message the recipient's SMTP server received.
+     * </p>
+     * <p>
+     * NOTE: These are accounted for and billed as delivered messages
+     * </p>
+     */
+    @FormProperty("o:archive-to")
+    String archiveTo;
+
+    /**
      * <p>
      * Specify Reply-To address
      * </p>
@@ -250,32 +336,31 @@ public class Message {
     @FormProperty("h:Reply-To")
     String replyTo;
 
-	/**
-	 * <p>
-	 * Specify Sender address
-	 * </p>
-	 */
-	@FormProperty("h:Sender")
-	String sender;
+    /**
+     * {@code Sender} header value ({@code h:Sender}).
+     */
+    @FormProperty("h:Sender")
+    String sender;
 
     /**
-     * <p>
-     * A valid JSON-encoded dictionary, where key is a plain recipient address and value is a dictionary
-     * with variables that can be referenced in the message body.
-     * </p>
+     * JSON-encoded map of recipient address to per-recipient variables (batch sending; up to 1,000 recipients per batch).
      *
-     * @see <a href="https://documentation.mailgun.com/en/latest/user_manual.html#batch-sending">Batch Sending</a>
+     * @see <a href="https://documentation.mailgun.com/docs/mailgun/user-manual/sending-messages/batch-sending">Batch Sending</a>
      */
     @FormProperty("recipient-variables")
     String recipientVariables;
 
     /**
-     * <p>
-     * Allows to attach a custom JSON data to the message
-     * </p>
+     * Example single {@code v:} user variable ({@code v:my-var}). For multiple variables prefer {@link #userVariables}.
      */
     @FormProperty("v:my-var")
     String myVar;
+
+    /**
+     * Additional {@code v:} variables: map keys are names without the {@code v:} prefix (for example {@code "user-id"} → {@code v:user-id}).
+     */
+    @CustomProperties(prefix = "v:")
+    Map<String, String> userVariables;
 
     /**
      * <p>
@@ -306,7 +391,7 @@ public class Message {
     private static class CustomMessageBuilder extends MessageBuilder {
 
         public Message build() {
-            if (StringUtils.isBlank(super.from)) {
+            if (StringUtils.isBlank(super.from) && StringUtils.isBlank(super.template)) {
                 throw new IllegalArgumentException(String.format(FIELD_CANNOT_BE_NULL_OR_EMPTY, "from"));
             }
 
@@ -321,6 +406,19 @@ public class Message {
 
             if (CollectionUtils.isNotEmpty(super.attachment) && CollectionUtils.isNotEmpty(super.formData)) {
                 throw new IllegalArgumentException("You cannot use 'attachment' and 'formData' together");
+            }
+
+            if (CollectionUtils.isNotEmpty(super.inline) && CollectionUtils.isNotEmpty(super.inlineFormData)) {
+                throw new IllegalArgumentException("You cannot use 'inline' and 'inlineFormData' together");
+            }
+
+            boolean hasBody = StringUtils.isNotBlank(super.text)
+                || StringUtils.isNotBlank(super.html)
+                || StringUtils.isNotBlank(super.ampHtml)
+                || StringUtils.isNotBlank(super.template);
+            if (!hasBody) {
+                throw new IllegalArgumentException(
+                    "At least one of 'text', 'html', 'amp-html', or 'template' must be provided");
             }
 
             return super.build();
@@ -494,11 +592,38 @@ public class Message {
         }
 
         /**
+         * Inline attachment as {@link FormData} (cannot be combined with file-based {@link #inline}).
+         */
+        public Message.MessageBuilder inlineFormData(FormData inline) {
+            this.inlineFormData = CollectionUtil.addToSet(this.inlineFormData, inline);
+            return this;
+        }
+
+        /**
+         * Inline attachments as {@link FormData} (cannot be combined with file-based {@link #inline}).
+         */
+        public Message.MessageBuilder inlineFormData(List<FormData> inlines) {
+            this.inlineFormData = CollectionUtil.addToSet(this.inlineFormData, inlines);
+            return this;
+        }
+
+        /**
          * <p>
-         * Rendered template in the text part of the message in case of template sending.
+         * AMP part of the message. Follow Google guidelines to compose and send AMP emails.
          * </p>
          *
-         * @param renderTemplate Pass <code>true</code> if you want to have rendered template in the text part of the message in case of template sending.
+         * @param ampHtml AMP HTML content
+         * @return Returns a reference to this object so that method calls can be chained together.
+         */
+        public Message.MessageBuilder ampHtml(String ampHtml) {
+            this.ampHtml = ampHtml;
+            return this;
+        }
+
+        /**
+         * Sets {@code t:text=yes} so Mailgun adds a {@code text/plain} part derived from the template.
+         *
+         * @param renderTemplate when {@code true}, sets {@code t:text} to {@code yes}
          * @return Returns a reference to this object so that method calls can be chained together.
          */
         public MessageBuilder renderTemplate(boolean renderTemplate) {
@@ -515,7 +640,7 @@ public class Message {
          *
          * @param tag Tag string.
          * @return Returns a reference to this object so that method calls can be chained together.
-         * @see <a href="https://documentation.mailgun.com/en/latest/user_manual.html#tagging-1">Tagging</a>
+         * @see <a href="https://documentation.mailgun.com/docs/mailgun/user-manual/tracking-messages/track-tagging">Tagging</a>
          */
         public Message.MessageBuilder tag(String tag) {
             this.tag = CollectionUtil.addToSet(this.tag, tag);
@@ -529,7 +654,7 @@ public class Message {
          *
          * @param tags Tag strings.
          * @return Returns a reference to this object so that method calls can be chained together.
-         * @see <a href="https://documentation.mailgun.com/en/latest/user_manual.html#tagging-1">Tagging</a>
+         * @see <a href="https://documentation.mailgun.com/docs/mailgun/user-manual/tracking-messages/track-tagging">Tagging</a>
          */
         public Message.MessageBuilder tag(List<String> tags) {
             this.tag = CollectionUtil.addToSet(this.tag, tags);
@@ -550,12 +675,23 @@ public class Message {
         }
 
         /**
-         * <p>
-         * Desired time of delivery.
-         * </p>
-         * <p>
-         * Note: Messages can be scheduled for a maximum of 3 days in the future.
-         * </p>
+         * Second DKIM signing domain and selector ({@code signing_domain/selector}).
+         */
+        public MessageBuilder secondaryDkim(String secondaryDkim) {
+            this.secondaryDkim = secondaryDkim;
+            return this;
+        }
+
+        /**
+         * Public signing domain alias for secondary DKIM ({@code public_signing_domain/selector}).
+         */
+        public MessageBuilder secondaryDkimPublic(String secondaryDkimPublic) {
+            this.secondaryDkimPublic = secondaryDkimPublic;
+            return this;
+        }
+
+        /**
+         * Scheduled delivery time (RFC-2822). Maximum advance scheduling depends on your plan and domain settings.
          *
          * @param deliveryTime Desired time of delivery.
          * @return Returns a reference to this object so that method calls can be chained together.
@@ -567,12 +703,70 @@ public class Message {
 
         /**
          * <p>
+         * Delivery deadline for the message.
+         * </p>
+         * <p>
+         * Expects a Golang encoded duration value in range [5m;24h].
+         * Examples: "5m", "30m", "1h", "12h", "24h".
+         * </p>
+         * <p>
+         * If specified, an explicit deadline is set for the corresponding smtp2 job
+         * and deliver-by field is added to the fired accepted event with the deadline value.
+         * </p>
+         *
+         * @param deliverWithin Golang encoded duration value (e.g., "5m", "1h", "24h")
+         * @return Returns a reference to this object so that method calls can be chained together.
+         */
+        public MessageBuilder deliverWithin(String deliverWithin) {
+            this.deliverWithin = deliverWithin;
+            return this;
+        }
+
+        /**
+         * Send Time Optimization window (for example {@code 24h}; minimum {@code 24h}, maximum {@code 72h}).
+         */
+        public MessageBuilder deliveryTimeOptimizePeriod(String deliveryTimeOptimizePeriod) {
+            this.deliveryTimeOptimizePeriod = deliveryTimeOptimizePeriod;
+            return this;
+        }
+
+        /**
+         * Timezone Optimization preferred local delivery time ({@code HH:mm} or {@code hh:mmaa}).
+         */
+        public MessageBuilder timeZoneLocalize(String timeZoneLocalize) {
+            this.timeZoneLocalize = timeZoneLocalize;
+            return this;
+        }
+
+        /**
+         * <p>
+         * X-Mailgun-Deliver-Within header - delivery deadline for the message.
+         * </p>
+         * <p>
+         * Expects a Golang encoded duration value in range [5m;24h].
+         * Examples: "5m", "30m", "1h", "12h", "24h".
+         * </p>
+         * <p>
+         * If specified, an explicit deadline is set for the corresponding smtp2 job
+         * and deliver-by field is added to the fired accepted event with the deadline value.
+         * </p>
+         *
+         * @param xMailgunDeliverWithin Golang encoded duration value (e.g., "5m", "1h", "24h")
+         * @return Returns a reference to this object so that method calls can be chained together.
+         */
+        public MessageBuilder xMailgunDeliverWithin(String xMailgunDeliverWithin) {
+            this.xMailgunDeliverWithin = xMailgunDeliverWithin;
+            return this;
+        }
+
+        /**
+         * <p>
          * Enables sending in test mode.
          * </p>
          *
          * @param enableSendingInTestMode Enables sending in test mode.
          * @return Returns a reference to this object so that method calls can be chained together.
-         * @see <a href="https://documentation.mailgun.com/en/latest/user_manual.html#manual-testmode">Sending in Test Mode</a>
+         * @see <a href="https://documentation.mailgun.com/docs/mailgun/user-manual/sending-messages/test-mode">Sending in Test Mode</a>
          */
         public MessageBuilder testMode(boolean enableSendingInTestMode) {
             if (enableSendingInTestMode) {
@@ -582,16 +776,22 @@ public class Message {
         }
 
         /**
-         * <p>
-         * Toggles tracking on a per-message basis.
-         * </p>
+         * Toggles click and open tracking using {@code yes} or {@code no}. For {@code htmlonly} (or other API values), use {@link #tracking(YesNoHtml)}.
          *
-         * @param toggleTracking Toggles tracking on a per-message basis.
+         * @param toggleTracking when {@code true}, {@code yes}; when {@code false}, {@code no}
          * @return Returns a reference to this object so that method calls can be chained together.
-         * @see <a href="https://documentation.mailgun.com/en/latest/user_manual.html#tracking-messages">Tracking Messages</a>
+         * @see <a href="https://documentation.mailgun.com/docs/mailgun/api-reference/send/mailgun/messages/post-v3--domain-name--messages">Send an email</a>
          */
         public MessageBuilder tracking(boolean toggleTracking) {
             this.tracking = YesNo.getValue(toggleTracking);
+            return this;
+        }
+
+        /**
+         * Toggles click and open tracking on a per-message basis, including {@link YesNoHtml#HTML_ONLY} for HTML-only tracking.
+         */
+        public MessageBuilder tracking(YesNoHtml tracking) {
+            this.tracking = tracking.getValue();
             return this;
         }
 
@@ -665,6 +865,64 @@ public class Message {
         }
 
         /**
+         * Dedicated sending IP for this message.
+         */
+        public MessageBuilder sendingIp(String sendingIp) {
+            this.sendingIp = sendingIp;
+            return this;
+        }
+
+        /**
+         * Sending IP pool identifier.
+         */
+        public MessageBuilder sendingIpPool(String sendingIpPool) {
+            this.sendingIpPool = sendingIpPool;
+            return this;
+        }
+
+        /**
+         * Whether to place the open-tracking pixel at the top of HTML messages
+         * ({@code yes}, {@code no}, {@code true}, {@code false}, {@code htmlonly}).
+         */
+        public MessageBuilder trackingPixelLocationTop(YesNoHtml trackingPixelLocationTop) {
+            this.trackingPixelLocationTop = trackingPixelLocationTop.getValue();
+            return this;
+        }
+
+        /**
+         * Same as {@link #trackingPixelLocationTop(YesNoHtml)} with a raw API value.
+         */
+        public MessageBuilder trackingPixelLocationTop(String trackingPixelLocationTop) {
+            this.trackingPixelLocationTop = trackingPixelLocationTop;
+            return this;
+        }
+
+        /**
+         * Headers to remove from the delivered message (comma-separated names or {@code all}).
+         */
+        public MessageBuilder suppressHeaders(String suppressHeaders) {
+            this.suppressHeaders = suppressHeaders;
+            return this;
+        }
+
+        /**
+         * <p>
+         * Sends a copy of successfully delivered messages to the specified URL via HTTP POST.
+         * The request uses Content-Type: application/mime and contains the exact message the recipient's SMTP server received.
+         * </p>
+         * <p>
+         * NOTE: These are accounted for and billed as delivered messages
+         * </p>
+         *
+         * @param archiveTo copy emails to this URL
+         * @return Returns a reference to this object so that method calls can be chained together.
+         */
+        public MessageBuilder archiveTo(String archiveTo) {
+            this.archiveTo = archiveTo;
+            return this;
+        }
+
+        /**
          * <p>
          * Specify Reply-To address
          * </p>
@@ -677,18 +935,16 @@ public class Message {
             return this;
         }
 
-		/**
-		 * <p>
-		 * Specify Sender address
-		 * </p>
-		 *
-		 * @param sender Sender address
-		 * @return Returns a reference to this object so that method calls can be chained together.
-		 */
-		public MessageBuilder sender(String sender) {
-			this.sender = sender;
-			return this;
-		}
+        /**
+         * Sets the {@code Sender} header ({@code h:Sender}).
+         *
+         * @param sender Sender address
+         * @return Returns a reference to this object so that method calls can be chained together.
+         */
+        public MessageBuilder sender(String sender) {
+            this.sender = sender;
+            return this;
+        }
 
         /**
          * <p>
@@ -699,7 +955,7 @@ public class Message {
          * @param recipientVariables A dictionary, where the key is a plain recipient address
          *                           and the value is a dictionary with variables that can be referenced in the message body.
          * @return Returns a reference to this object so that method calls can be chained together.
-         * @see <a href="https://documentation.mailgun.com/en/latest/user_manual.html#batch-sending">Batch Sending</a>
+         * @see <a href="https://documentation.mailgun.com/docs/mailgun/user-manual/sending-messages/batch-sending">Batch Sending</a>
          */
         public MessageBuilder recipientVariables(Map<String, Object> recipientVariables) {
             this.recipientVariables = StringUtil.asJsonString(recipientVariables);
@@ -715,7 +971,7 @@ public class Message {
          * @param recipientVariables A valid JSON-encoded dictionary, where the key is a plain recipient address
          *                           and the value is a dictionary with variables that can be referenced in the message body.
          * @return Returns a reference to this object so that method calls can be chained together.
-         * @see <a href="https://documentation.mailgun.com/en/latest/user_manual.html#batch-sending">Batch Sending</a>
+         * @see <a href="https://documentation.mailgun.com/docs/mailgun/user-manual/sending-messages/batch-sending">Batch Sending</a>
          */
         public MessageBuilder recipientVariables(String recipientVariables) {
             this.recipientVariables = recipientVariables;
@@ -745,6 +1001,14 @@ public class Message {
          */
         public MessageBuilder myVar(String myVar) {
             this.myVar = myVar;
+            return this;
+        }
+
+        /**
+         * Per-message {@code v:} variables (keys without the {@code v:} prefix).
+         */
+        public MessageBuilder userVariables(Map<String, String> userVariables) {
+            this.userVariables = userVariables;
             return this;
         }
 

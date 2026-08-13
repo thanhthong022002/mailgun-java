@@ -3,8 +3,13 @@ package com.mailgun.api.v3;
 import com.mailgun.api.MailgunApi;
 import com.mailgun.api.WireMockBaseTest;
 import com.mailgun.client.MailgunClient;
+import com.mailgun.model.ResponseWithMessage;
 import com.mailgun.model.message.Message;
 import com.mailgun.model.message.MessageResponse;
+import com.mailgun.model.message.SendingQueueDisabled;
+import com.mailgun.model.message.SendingQueueInfo;
+import com.mailgun.model.message.SendingQueuesResponse;
+import com.mailgun.model.message.StoreMessageResponse;
 import com.mailgun.utils.MessageUtils;
 import com.mailgun.utils.TestHeadersUtils;
 import org.junit.jupiter.api.BeforeEach;
@@ -12,10 +17,12 @@ import org.junit.jupiter.api.Test;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.containing;
+import static com.github.tomakehurst.wiremock.client.WireMock.delete;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
-import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static com.mailgun.constants.TestConstants.EMAIL_RESPONSE_ID;
 import static com.mailgun.constants.TestConstants.EMAIL_RESPONSE_MESSAGE;
 import static com.mailgun.constants.TestConstants.TEST_API_KEY;
@@ -25,6 +32,8 @@ import static com.mailgun.constants.TestConstants.TEST_EMAIL_2;
 import static com.mailgun.constants.TestConstants.TEST_EMAIL_SUBJECT;
 import static com.mailgun.constants.TestConstants.TEST_EMAIL_TEXT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 class MailgunMessagesApiTest extends WireMockBaseTest {
 
@@ -38,7 +47,7 @@ class MailgunMessagesApiTest extends WireMockBaseTest {
 
     @Test
     void sendMessageWithDomainSuccessTest() {
-        stubFor(post(urlEqualTo("/" + MailgunApi.getApiVersion().getValue() + "/" + TEST_DOMAIN + "/messages"))
+        stubFor(post(urlPathEqualTo("/" + MailgunApi.getApiVersion().getValue() + "/" + TEST_DOMAIN + "/messages"))
                 .withHeader("Authorization", equalTo(TestHeadersUtils.getExpectedAuthHeader()))
                 .withHeader("Content-Type",
                         containing("multipart/form-data"))
@@ -62,4 +71,83 @@ class MailgunMessagesApiTest extends WireMockBaseTest {
         assertEquals(EMAIL_RESPONSE_MESSAGE, result.getMessage());
     }
 
+    @Test
+    void getSendingQueuesSuccessTest() {
+        String body = "{\"regular\":{\"is_disabled\":false},\"scheduled\":{\"is_disabled\":true,\"disabled\":{\"until\":\"Fri, 14 Oct 2011 12:00:00 +0000\",\"reason\":\"Maintenance\"}}}}";
+        stubFor(get(urlPathEqualTo("/" + MailgunApi.getApiVersion().getValue() + "/domains/" + TEST_DOMAIN + "/sending_queues"))
+                .withHeader("Authorization", equalTo(TestHeadersUtils.getExpectedAuthHeader()))
+                .withHeader("Accept", equalTo("application/json"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(body)));
+
+        SendingQueuesResponse result = mailgunMessagesApi.getSendingQueues(TEST_DOMAIN);
+
+        SendingQueueInfo regular = result.getRegular();
+        assertEquals(Boolean.FALSE, regular.getIsDisabled());
+        assertNull(regular.getDisabled());
+
+        SendingQueueInfo scheduled = result.getScheduled();
+        assertEquals(Boolean.TRUE, scheduled.getIsDisabled());
+        SendingQueueDisabled disabled = scheduled.getDisabled();
+        assertNotNull(disabled);
+        assertEquals("Fri, 14 Oct 2011 12:00:00 +0000", disabled.getUntil());
+        assertEquals("Maintenance", disabled.getReason());
+    }
+
+    @Test
+    void deleteEnvelopesSuccessTest() {
+        String body = "{\"message\":\"Queued messages deleted\"}";
+        stubFor(delete(urlPathEqualTo("/" + MailgunApi.getApiVersion().getValue() + "/" + TEST_DOMAIN + "/envelopes"))
+                .withHeader("Authorization", equalTo(TestHeadersUtils.getExpectedAuthHeader()))
+                .withHeader("Accept", equalTo("application/json"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(body)));
+
+        ResponseWithMessage result = mailgunMessagesApi.deleteEnvelopes(TEST_DOMAIN);
+
+        assertEquals("Queued messages deleted", result.getMessage());
+    }
+
+    @Test
+    void getStoredMessageSuccessTest() {
+        String storageKey = "AgEFbHVtemk";
+        String body = "{"
+            + "\"Content-Transfer-Encoding\":\"7bit\","
+            + "\"Content-Type\":\"multipart/alternative; boundary=xyz\","
+            + "\"From\":\"Bob <bob@example.com>\","
+            + "\"Message-Id\":\"<id@example.com>\","
+            + "\"Mime-Version\":\"1.0\","
+            + "\"Subject\":\"Hi\","
+            + "\"To\":\"Alice <alice@example.com>\","
+            + "\"X-Mailgun-Tag\":\"t1\","
+            + "\"sender\":\"bob@example.com\","
+            + "\"recipients\":\"alice@example.com\","
+            + "\"body-html\":\"<p>x</p>\","
+            + "\"body-plain\":\"x\","
+            + "\"stripped-html\":\"<p>x</p>\","
+            + "\"stripped-text\":\"x\","
+            + "\"stripped-signature\":\"\","
+            + "\"message-headers\":[[\"Subject\",\"Hi\"]],"
+            + "\"X-Mailgun-Template-Name\":\"\","
+            + "\"X-Mailgun-Template-Variables\":\"\""
+            + "}";
+        stubFor(get(urlPathEqualTo("/" + MailgunApi.getApiVersion().getValue() + "/domains/" + TEST_DOMAIN + "/messages/" + storageKey))
+                .withHeader("Authorization", equalTo(TestHeadersUtils.getExpectedAuthHeader()))
+                .withHeader("Accept", equalTo("application/json"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(body)));
+
+        StoreMessageResponse result = mailgunMessagesApi.getStoredMessage(TEST_DOMAIN, storageKey);
+
+        assertEquals("7bit", result.getContentTransferEncoding());
+        assertEquals("Hi", result.getSubject());
+        assertEquals("<p>x</p>", result.getBodyHtml());
+        assertEquals("t1", result.getXMailgunTag());
+    }
 }

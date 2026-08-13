@@ -4,6 +4,7 @@ import com.mailgun.api.MailgunApi;
 import com.mailgun.model.ResponseWithMessage;
 import com.mailgun.model.routes.Route;
 import com.mailgun.model.routes.RoutesListResponse;
+import com.mailgun.model.routes.RoutesMatchRequest;
 import com.mailgun.model.routes.RoutesPageRequest;
 import com.mailgun.model.routes.RoutesRequest;
 import com.mailgun.model.routes.RoutesResponse;
@@ -16,28 +17,25 @@ import feign.Response;
 
 /**
  * <p>
- * Mailgun Routes Api
+ * Mailgun Routes API (v3): define how incoming email is handled when it matches a route expression.
  * </p>
  * <p>
- * Mailgun Routes are a powerful way to handle the incoming traffic.
+ * Mailgun can forward matching messages to your application over HTTP, to another email address, or store them
+ * temporarily (about three days) for later retrieval.
  * </p>
  * <p>
- * See
- * <a href="https://documentation.mailgun.com/en/latest/user_manual.html#um-routes">user-manual/Routes</a>
- * section in the User Manual to learn more about how they work.
+ * Routes are defined <strong>globally per account</strong>, not per sending domain.
  * </p>
  * <p>
- * This API allows you to work with routes programmatically.
- * <p>
- * Routes are comprised of the following arguments:
+ * See the
+ * <a href="https://documentation.mailgun.com/en/latest/user_manual.html#um-routes">User Manual (Routes)</a>
+ * for behaviour details.
  * </p>
- * <pre>
- * A filter (when to do something).
- * A priority (in what order).
- * An action (what to do).
- * </pre>
+ * <p>
+ * Each route has a filter expression, a priority (lower number runs first), and one or more actions.
+ * </p>
  *
- * @see <a href="https://documentation.mailgun.com/en/latest/api-routes.html">Routes</a>
+ * @see <a href="https://documentation.mailgun.com/docs/mailgun/api-reference/send/mailgun/routes">Routes</a>
  */
 @Headers("Accept: application/json")
 public interface MailgunRoutesApi extends MailgunApi {
@@ -46,9 +44,12 @@ public interface MailgunRoutesApi extends MailgunApi {
      * <p>
      * Fetches the list of routes (limit to 100 entries).
      * </p>
-     * Note: that routes are defined globally, per account, not per domain as most of other API calls.
+     * <p>
+     * Get the list of routes. Note that routes are defined globally, per account, not per domain.
+     * </p>
      *
      * @return {@link RoutesListResponse}
+     * @see <a href="https://documentation.mailgun.com/docs/mailgun/api-reference/send/mailgun/routes/get-v3-routes">Get all routes</a>
      */
     @RequestLine("GET /routes")
     RoutesListResponse getRoutesList();
@@ -92,9 +93,13 @@ public interface MailgunRoutesApi extends MailgunApi {
      * <p>
      * Returns a single route object based on its ID.
      * </p>
+     * <p>
+     * Returns a detailed view of the route.
+     * </p>
      *
-     * @param id ID of the route
+     * @param id The unique identifier of the route
      * @return {@link SingleRouteResponse}
+     * @see <a href="https://documentation.mailgun.com/docs/mailgun/api-reference/send/mailgun/routes/get-v3-routes-id">Get a route</a>
      */
     @RequestLine("GET /routes/{id}")
     SingleRouteResponse getSingleRoute(@Param("id") String id);
@@ -114,9 +119,13 @@ public interface MailgunRoutesApi extends MailgunApi {
      * <p>
      * Creates a new route.
      * </p>
+     * <p>
+     * Adds a new route to the account.
+     * </p>
      *
      * @param request {@link RoutesRequest}
      * @return {@link RoutesResponse}
+     * @see <a href="https://documentation.mailgun.com/docs/mailgun/api-reference/send/mailgun/routes/post-v3-routes">Create a route</a>
      */
     @Headers("Content-Type: multipart/form-data")
     @RequestLine("POST /routes")
@@ -126,9 +135,13 @@ public interface MailgunRoutesApi extends MailgunApi {
      * <p>
      * Creates a new route.
      * </p>
+     * <p>
+     * Adds a new route to the account.
+     * </p>
      *
      * @param request {@link RoutesRequest}
      * @return {@link Response}
+     * @see <a href="https://documentation.mailgun.com/docs/mailgun/api-reference/send/mailgun/routes/post-v3-routes">Create a route</a>
      */
     @Headers("Content-Type: multipart/form-data")
     @RequestLine("POST /routes")
@@ -138,11 +151,14 @@ public interface MailgunRoutesApi extends MailgunApi {
      * <p>
      * Updates a given route by ID.
      * </p>
-     * All parameters are optional: this API call only updates the specified fields leaving others unchanged.
+     * <p>
+     * Updates a given route. All parameters are optional. This only updates the specified fields, leaving others unchanged.
+     * </p>
      *
      * @param id      ID of the route
      * @param request {@link RoutesRequest}
      * @return {@link Route}
+     * @see <a href="https://documentation.mailgun.com/docs/mailgun/api-reference/send/mailgun/routes/put-v3-routes-id">Update a route</a>
      */
     @Headers("Content-Type: multipart/form-data")
     @RequestLine("PUT /routes/{id}")
@@ -152,11 +168,14 @@ public interface MailgunRoutesApi extends MailgunApi {
      * <p>
      * Updates a given route by ID.
      * </p>
-     * All parameters are optional: this API call only updates the specified fields leaving others unchanged.
+     * <p>
+     * Updates a given route. All parameters are optional. This only updates the specified fields, leaving others unchanged.
+     * </p>
      *
      * @param id      ID of the route
      * @param request {@link RoutesRequest}
      * @return {@link Response}
+     * @see <a href="https://documentation.mailgun.com/docs/mailgun/api-reference/send/mailgun/routes/put-v3-routes-id">Update a route</a>
      */
     @Headers("Content-Type: multipart/form-data")
     @RequestLine("PUT /routes/{id}")
@@ -166,9 +185,13 @@ public interface MailgunRoutesApi extends MailgunApi {
      * <p>
      * Deletes a route based on the id.
      * </p>
+     * <p>
+     * Remove the route from the account.
+     * </p>
      *
      * @param id ID of the route
      * @return {@link ResponseWithMessage}
+     * @see <a href="https://documentation.mailgun.com/docs/mailgun/api-reference/send/mailgun/routes/delete-v3-routes-id">Delete a route</a>
      */
     @RequestLine("DELETE /routes/{id}")
     ResponseWithMessage deleteRoute(@Param("id") String id);
@@ -183,5 +206,34 @@ public interface MailgunRoutesApi extends MailgunApi {
      */
     @RequestLine("DELETE /routes/{id}")
     Response deleteRouteFeignResponse(@Param("id") String id);
+
+    /**
+     * <p>
+     * Checks if an address matches at least one route.
+     * </p>
+     * <p>
+     * Returns the first matching route if found, or 404 if no route matches.
+     * </p>
+     *
+     * @param matchRequest {@link RoutesMatchRequest} containing the address to match
+     * @return {@link SingleRouteResponse}
+     * @see <a href="https://documentation.mailgun.com/docs/mailgun/api-reference/send/mailgun/routes/get-v3-routes-match">Match address to route</a>
+     */
+    @RequestLine("GET /routes/match")
+    SingleRouteResponse matchRoute(@QueryMap RoutesMatchRequest matchRequest);
+
+    /**
+     * <p>
+     * Checks if an address matches at least one route.
+     * </p>
+     * <p>
+     * Returns the first matching route if found, or 404 if no route matches.
+     * </p>
+     *
+     * @param matchRequest {@link RoutesMatchRequest} containing the address to match
+     * @return {@link Response}
+     */
+    @RequestLine("GET /routes/match")
+    Response matchRouteFeignResponse(@QueryMap RoutesMatchRequest matchRequest);
 
 }
