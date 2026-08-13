@@ -5,6 +5,16 @@ All _notable_ changes to this project will be documented in this file.
 The format is based on _[Keep a Changelog][keepachangelog]_, and this project
 adheres to _[Semantic Versioning][semver]_.
 
+## [2.4.2-xomad-1] (released: 2026-08-13)
+### Added
+- `AddressValidationResponse.didYouMean` / `.rootAddress` / `.engagement` — the `did_you_mean`,
+  `root_address` and `engagement` fields that `GET /v4/address/validate` returns but the model
+  did not carry. `engagement` is the new `Engagement` model (`is_bot`, `engaged`, `engagement`).
+
+### Changed (xomad build)
+- Version suffix `-xomad-N`; publishes to the internal Nexus rather than Sonatype Central.
+- Kept `Message.xoEmailIdOnHeader` (`h:X-Email-ID`) from the previous xomad build.
+
 ## [2.4.2] (released: 2026-07-31)
 ### Updated
 - Updated and sync Key API
