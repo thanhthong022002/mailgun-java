@@ -2,6 +2,7 @@ package com.mailgun.model.message;
 
 import com.mailgun.enums.YesNo;
 import com.mailgun.enums.YesNoHtml;
+import com.mailgun.form.PojoUtil;
 import com.mailgun.util.EmailUtil;
 import feign.form.FormData;
 
@@ -18,22 +19,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import static com.mailgun.constants.TestConstants.TEMPLATE_VERSION;
-import static com.mailgun.constants.TestConstants.TEST_EMAIL_1;
-import static com.mailgun.constants.TestConstants.TEST_EMAIL_2;
-import static com.mailgun.constants.TestConstants.TEST_EMAIL_3;
-import static com.mailgun.constants.TestConstants.TEST_EMAIL_4;
-import static com.mailgun.constants.TestConstants.TEST_EMAIL_5;
-import static com.mailgun.constants.TestConstants.TEST_EMAIL_HTML;
-import static com.mailgun.constants.TestConstants.TEST_EMAIL_SUBJECT;
-import static com.mailgun.constants.TestConstants.TEST_EMAIL_TEXT;
-import static com.mailgun.constants.TestConstants.TEST_TAG_1;
-import static com.mailgun.constants.TestConstants.TEST_TAG_2;
-import static com.mailgun.constants.TestConstants.TEST_TAG_3;
-import static com.mailgun.constants.TestConstants.TEST_TAG_4;
-import static com.mailgun.constants.TestConstants.TEST_USER_NAME;
-import static com.mailgun.constants.TestConstants.ZONED_DATE_TIME_2018_2_3_GMT;
-import static com.mailgun.constants.TestConstants.ZONED_DATE_TIME_2018_2_3_GMT_STRING;
+import static com.mailgun.constants.TestConstants.*;
 import static com.mailgun.util.Constants.FIELD_CANNOT_BE_NULL_OR_EMPTY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -48,6 +34,7 @@ class MessageTest {
         Message result = Message.builder()
                 .from(TEST_EMAIL_1)
                 .to(TEST_EMAIL_2)
+                .text(TEST_EMAIL_TEXT)
                 .build();
 
         assertNotNull(result);
@@ -56,7 +43,8 @@ class MessageTest {
         assertNull(result.getCc());
         assertNull(result.getBcc());
         assertNull(result.getSubject());
-        assertNull(result.getText());
+        assertEquals(TEST_EMAIL_TEXT, result.getText());
+        assertNull(result.getAmpHtml());
         assertNull(result.getAttachment());
         assertNull(result.getInline());
         assertNull(result.getTemplateVersion());
@@ -64,6 +52,8 @@ class MessageTest {
         assertNull(result.getTag());
         assertNull(result.getDkim());
         assertNull(result.getDeliveryTime());
+        assertNull(result.getDeliverWithin());
+        assertNull(result.getXMailgunDeliverWithin());
         assertNull(result.getTestMode());
         assertNull(result.getTracking());
         assertNull(result.getTrackingClicks());
@@ -72,6 +62,17 @@ class MessageTest {
         assertNull(result.getSkipVerification());
         assertNull(result.getReplyTo());
         assertNull(result.getRecipientVariables());
+        assertNull(result.getArchiveTo());
+        assertNull(result.getSecondaryDkim());
+        assertNull(result.getSecondaryDkimPublic());
+        assertNull(result.getDeliveryTimeOptimizePeriod());
+        assertNull(result.getTimeZoneLocalize());
+        assertNull(result.getSendingIp());
+        assertNull(result.getSendingIpPool());
+        assertNull(result.getTrackingPixelLocationTop());
+        assertNull(result.getSuppressHeaders());
+        assertNull(result.getInlineFormData());
+        assertNull(result.getUserVariables());
     }
 
     @Test
@@ -114,6 +115,8 @@ class MessageTest {
                 .tag(Arrays.asList(TEST_TAG_3, TEST_TAG_4))
                 .dkim(true)
                 .deliveryTime(ZONED_DATE_TIME_2018_2_3_GMT)
+                .deliverWithin("1h")
+                .xMailgunDeliverWithin("30m")
                 .testMode(true)
                 .tracking(true)
                 .trackingClicks(YesNoHtml.YES)
@@ -122,6 +125,16 @@ class MessageTest {
                 .skipVerification(true)
                 .replyTo(TEST_EMAIL_2)
                 .recipientVariables(recipientVariables)
+                .archiveTo(TEST_DOMAIN)
+                .secondaryDkim("example.com/s1")
+                .secondaryDkimPublic("public.example.com/s1")
+                .deliveryTimeOptimizePeriod("48h")
+                .timeZoneLocalize("09:00")
+                .sendingIp(TEST_IP_1)
+                .sendingIpPool("pool-1")
+                .trackingPixelLocationTop(YesNoHtml.YES)
+                .suppressHeaders("X-Mailgun-Variables")
+                .userVariables(Map.of("batch-id", "42"))
                 .build();
 
         assertNotNull(result);
@@ -136,6 +149,8 @@ class MessageTest {
         assertEquals(4, result.getTag().size());
         assertEquals(YesNo.YES.getValue(), result.getDkim());
         assertEquals(ZONED_DATE_TIME_2018_2_3_GMT_STRING, result.getDeliveryTime());
+        assertEquals("1h", result.getDeliverWithin());
+        assertEquals("30m", result.getXMailgunDeliverWithin());
         assertEquals(YesNo.YES.getValue(), result.getTestMode());
         assertEquals(YesNo.YES.getValue(), result.getTracking());
         assertEquals(YesNoHtml.YES.getValue(), result.getTrackingClicks());
@@ -144,6 +159,16 @@ class MessageTest {
         assertEquals(YesNo.YES.getValue(), result.getSkipVerification());
         assertEquals(TEST_EMAIL_2, result.getReplyTo());
         assertEquals("{\"firstEmail\":{\"Alice\":\"1\"},\"secondEmail\":{\"Bob\":\"2\"}}", result.getRecipientVariables());
+        assertEquals(TEST_DOMAIN, result.getArchiveTo());
+        assertEquals("example.com/s1", result.getSecondaryDkim());
+        assertEquals("public.example.com/s1", result.getSecondaryDkimPublic());
+        assertEquals("48h", result.getDeliveryTimeOptimizePeriod());
+        assertEquals("09:00", result.getTimeZoneLocalize());
+        assertEquals(TEST_IP_1, result.getSendingIp());
+        assertEquals("pool-1", result.getSendingIpPool());
+        assertEquals(YesNoHtml.YES.getValue(), result.getTrackingPixelLocationTop());
+        assertEquals("X-Mailgun-Variables", result.getSuppressHeaders());
+        assertEquals(Map.of("batch-id", "42"), result.getUserVariables());
     }
 
     @Test
@@ -239,6 +264,75 @@ class MessageTest {
 
 
     @Test
+    void messageBodyRequiredExceptionTest() {
+        Message.MessageBuilder messageBuilder = Message.builder()
+                .from(TEST_EMAIL_1)
+                .to(TEST_EMAIL_2);
+
+        Exception exception = assertThrows(IllegalArgumentException.class, messageBuilder::build);
+
+        assertEquals("At least one of 'text', 'html', 'amp-html', or 'template' must be provided", exception.getMessage());
+    }
+
+    @Test
+    void messageTemplateWithoutFromSuccessTest() {
+        Message result = Message.builder()
+                .to(TEST_EMAIL_2)
+                .template("welcome")
+                .build();
+
+        assertNotNull(result);
+        assertNull(result.getFrom());
+        assertEquals("welcome", result.getTemplate());
+    }
+
+    @Test
+    void messageTrackingHtmlOnlySuccessTest() {
+        Message message = Message.builder()
+                .from(TEST_EMAIL_1)
+                .to(TEST_EMAIL_2)
+                .text(TEST_EMAIL_TEXT)
+                .tracking(YesNoHtml.HTML_ONLY)
+                .build();
+
+        assertEquals(YesNoHtml.HTML_ONLY.getValue(), message.getTracking());
+        assertEquals(YesNoHtml.HTML_ONLY.getValue(), PojoUtil.toMap(message).get("o:tracking"));
+    }
+
+    @Test
+    void messageUserVariablesFormKeysTest() {
+        Message message = Message.builder()
+                .from(TEST_EMAIL_1)
+                .to(TEST_EMAIL_2)
+                .text(TEST_EMAIL_TEXT)
+                .userVariables(Map.of("user-id", "123", "segment", "a"))
+                .build();
+
+        Map<String, Object> map = PojoUtil.toMap(message);
+        assertEquals("123", map.get("v:user-id"));
+        assertEquals("a", map.get("v:segment"));
+    }
+
+    @Test
+    void messageInlineAndInlineFormDataTogetherExceptionTest() throws IOException {
+        File file = getTempFile("temp.1");
+        InputStream inputStream = new FileInputStream(getTempFile("temp.2"));
+        byte[] pngBytes = IOUtils.toByteArray(inputStream);
+        FormData formData = new FormData("image/png", "pixel.png", pngBytes);
+
+        Message.MessageBuilder messageBuilder = Message.builder()
+                .from(TEST_EMAIL_1)
+                .to(TEST_EMAIL_2)
+                .text(TEST_EMAIL_TEXT)
+                .inline(file)
+                .inlineFormData(formData);
+
+        Exception exception = assertThrows(IllegalArgumentException.class, messageBuilder::build);
+
+        assertEquals("You cannot use 'inline' and 'inlineFormData' together", exception.getMessage());
+    }
+
+    @Test
     void messageAttachmentAndFromDataTogetherExceptionTest() throws IOException {
         File file = getTempFile("temp.1");
         InputStream inputStream = new FileInputStream(getTempFile("temp.2"));
@@ -248,6 +342,7 @@ class MessageTest {
         Message.MessageBuilder messageBuilder = Message.builder()
             .from(TEST_EMAIL_1)
             .to(TEST_EMAIL_2)
+            .text(TEST_EMAIL_TEXT)
             .attachment(file)
             .formData(formData);
 

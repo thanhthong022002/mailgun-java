@@ -6,7 +6,11 @@
 
     <groupId>com.mailgun</groupId>
     <artifactId>mailgun-java</artifactId>
-    <version>10.0.5</version>
+    <!--
+        xomad build of upstream 2.4.2. Bump only the -xomad-N suffix for a re-release:
+        Nexus release coordinates are immutable, so a defective publish is corrected by -2.
+    -->
+    <version>2.4.2-xomad-1</version>
     <packaging>jar</packaging>
 
     <name>${project.groupId}:${project.artifactId}</name>
@@ -26,8 +30,9 @@
         <jackson.version>2.14.2</jackson.version>
         <commons-lang3.version>3.12.0</commons-lang3.version>
         <commons-collections4.version>4.4</commons-collections4.version>
-        <lombok.version>1.18.26</lombok.version>
+        <lombok.version>1.18.30</lombok.version>
         <junit-jupiter.version>5.9.2</junit-jupiter.version>
+        <jsonassert.version>1.5.0</jsonassert.version>
         <wiremock.version>2.27.2</wiremock.version>
         <maven.compiler.plugin.version>3.8.1</maven.compiler.plugin.version>
     </properties>
@@ -36,6 +41,11 @@
         <dependency>
             <groupId>io.github.openfeign</groupId>
             <artifactId>feign-core</artifactId>
+            <version>${feign-version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.github.openfeign</groupId>
+            <artifactId>feign-okhttp</artifactId>
             <version>${feign-version}</version>
         </dependency>
         <dependency>
@@ -138,9 +148,15 @@
                 </exclusion>
             </exclusions>
         </dependency>
-
+        <dependency>
+            <groupId>org.skyscreamer</groupId>
+            <artifactId>jsonassert</artifactId>
+            <version>${jsonassert.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
+    <!-- xomad: publish to the internal Nexus, not Sonatype. -->
     <distributionManagement>
         <snapshotRepository>
             <id>maven-snapshots</id>
@@ -184,12 +200,26 @@
                 <configuration>
                     <source>11</source>
                     <target>11</target>
+                    <proc>full</proc>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                            <version>${lombok.version}</version>
+                        </path>
+                    </annotationProcessorPaths>
                 </configuration>
             </plugin>
+            <!--
+                xomad: upstream's central-publishing-maven-plugin is deliberately removed.
+                It declares extensions=true, which replaces the default deploy lifecycle and
+                would push to Sonatype Central instead of the Nexus in distributionManagement.
+            -->
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>2.22.2</version>
                 <configuration>
+                    <argLine>-Djdk.attach.allowAttachSelf=true ${argLine}</argLine>
                     <excludes>
                         <exclude>**/*IntegrationTest.java</exclude>
                     </excludes>
@@ -261,10 +291,60 @@
     </build>
 
     <profiles>
+        <!-- Run tests without JaCoCo (e.g. on JDK 17+ when "Could not self-attach" occurs): mvn test -Pno-coverage -->
+        <profile>
+            <id>no-coverage</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.jacoco</groupId>
+                        <artifactId>jacoco-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>pre-unit-prepare</id>
+                                <phase>none</phase>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <argLine>-Djdk.attach.allowAttachSelf=true</argLine>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
         <profile>
             <id>release</id>
             <build>
                 <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-source-plugin</artifactId>
+                        <version>3.3.1</version>
+                        <executions>
+                            <execution>
+                                <id>attach-sources</id>
+                                <goals>
+                                    <goal>jar-no-fork</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <version>3.11.2</version>
+                        <executions>
+                            <execution>
+                                <id>attach-javadocs</id>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-gpg-plugin</artifactId>

@@ -13,12 +13,16 @@ import com.mailgun.model.domains.DomainRequest;
 import com.mailgun.model.domains.DomainResponse;
 import com.mailgun.model.domains.DomainTrackingResponse;
 import com.mailgun.model.domains.DomainUnsubscribeConnectionSettingsRequest;
+import com.mailgun.model.domains.OpenTrackingSettingsRequest;
 import com.mailgun.model.domains.DomainsParametersFilter;
 import com.mailgun.model.domains.SingleDomainResponse;
 import com.mailgun.model.domains.UpdateDomainClickTrackingSettingsResponse;
 import com.mailgun.model.domains.UpdateDomainConnectionResponse;
 import com.mailgun.model.domains.UpdateDomainOpenTrackingSettingsResponse;
 import com.mailgun.model.domains.UpdateDomainUnsubscribeTrackingSettingsResponse;
+import com.mailgun.model.domainkeys.DkimAuthorityRequest;
+import com.mailgun.model.domainkeys.DkimAuthorityResponse;
+import com.mailgun.model.domainkeys.DkimSelectorRequest;
 import feign.Headers;
 import feign.Param;
 import feign.QueryMap;
@@ -27,9 +31,12 @@ import feign.Response;
 
 /**
  * <p>
- * The domains API allows you to create, access, and validate domains programmatically.
+ * Domains API (v3): delete domain, credentials, connection, tracking, and DKIM authority/selector.
+ * For listing, creating, getting, updating, and verifying domains use the v4 API:
+ * {@link com.mailgun.api.v4.MailgunDomainsApi} (GET/POST/PUT /v4/domains). Delete domain remains on v3.
  * </p>
  *
+ * @see <a href="https://documentation.mailgun.com/docs/mailgun/api-reference/send/mailgun/domains/delete-v3-domains--name-">Delete a domain</a>
  * @see <a href="https://documentation.mailgun.com/en/latest/api-domains.html">Domains</a>
  */
 @Headers("Accept: application/json")
@@ -37,7 +44,8 @@ public interface MailgunDomainsApi extends MailgunApi {
 
     /**
      * <p>
-     * Returns a list of domains under your account (limit to 100 entries).
+     * Returns a list of domains under your account. Prefer {@link com.mailgun.api.v4.MailgunDomainsApi#getDomainsList()}
+     * for v4 (paginated, max 1000 per page, filter by state/authority, sort, search).
      * </p>
      *
      * @return {@link DomainListResponse}
@@ -47,17 +55,7 @@ public interface MailgunDomainsApi extends MailgunApi {
 
     /**
      * <p>
-     * Returns a list of domains under your account (limit to 100 entries).
-     * </p>
-     *
-     * @return {@link Response}
-     */
-    @RequestLine("GET /domains")
-    Response getDomainsListFeignResponse();
-
-    /**
-     * <p>
-     * Returns a list of domains under your account.
+     * Returns a list of domains under your account (with filter). Prefer {@link com.mailgun.api.v4.MailgunDomainsApi#getDomainsList(DomainsParametersFilter)} for v4.
      * </p>
      *
      * @param filter {@link DomainsParametersFilter}
@@ -68,7 +66,17 @@ public interface MailgunDomainsApi extends MailgunApi {
 
     /**
      * <p>
-     * Returns a list of domains under your account.
+     * Returns a list of domains (raw response).
+     * </p>
+     *
+     * @return {@link Response}
+     */
+    @RequestLine("GET /domains")
+    Response getDomainsListFeignResponse();
+
+    /**
+     * <p>
+     * Returns a list of domains with filter (raw response).
      * </p>
      *
      * @param filter {@link DomainsParametersFilter}
@@ -151,18 +159,19 @@ public interface MailgunDomainsApi extends MailgunApi {
 
     /**
      * <p>
-     * Delete a domain from your account.
+     * Delete a domain. Domain must not be disabled or used as authority for another domain. Sandbox domain cannot be deleted. (DELETE /v3/domains/{name})
      * </p>
      *
      * @param domain Name of the domain
      * @return {@link ResponseWithMessage}
+     * @see <a href="https://documentation.mailgun.com/docs/mailgun/api-reference/send/mailgun/domains/delete-v3-domains--name-">Delete a domain</a>
      */
     @RequestLine("DELETE /domains/{domain}")
     ResponseWithMessage deleteDomain(@Param("domain") String domain);
 
     /**
      * <p>
-     * Delete a domain from your account.
+     * Delete a domain (raw response).
      * </p>
      *
      * @param domain Name of the domain
@@ -300,20 +309,17 @@ public interface MailgunDomainsApi extends MailgunApi {
     Response updateDomainConnectionSettingsFeignResponse(@Param("domain") String domain, DomainConnectionRequest request);
 
     /**
-     * <p>
-     * Returns tracking settings for a domain.
-     * </p>
+     * Get tracking settings (open, click, unsubscribe, web_scheme) for a domain.
      *
      * @param domain Name of the domain
      * @return {@link DomainTrackingResponse}
+     * @see <a href="https://documentation.mailgun.com/docs/mailgun/api-reference/send/mailgun/domain-tracking/get-v3-domains--name--tracking">Get tracking settings</a>
      */
     @RequestLine("GET /domains/{domain}/tracking")
     DomainTrackingResponse getDomainTrackingSettings(@Param("domain") String domain);
 
     /**
-     * <p>
-     * Returns tracking settings for a domain.
-     * </p>
+     * Get tracking settings (raw response).
      *
      * @param domain Name of the domain
      * @return {@link Response}
@@ -322,9 +328,19 @@ public interface MailgunDomainsApi extends MailgunApi {
     Response getDomainTrackingSettingsFeignResponse(@Param("domain") String domain);
 
     /**
-     * <p>
-     * Updates the open tracking settings for a domain.
-     * </p>
+     * Update open tracking settings (active and/or place_at_the_top). Omit fields in request to keep current settings.
+     *
+     * @param domain  Name of the domain
+     * @param request {@link OpenTrackingSettingsRequest}
+     * @return {@link UpdateDomainOpenTrackingSettingsResponse}
+     * @see <a href="https://documentation.mailgun.com/docs/mailgun/api-reference/send/mailgun/domain-tracking/put-v3-domains--name--tracking-open">Update open tracking settings</a>
+     */
+    @Headers("Content-Type: multipart/form-data")
+    @RequestLine("PUT /domains/{domain}/tracking/open")
+    UpdateDomainOpenTrackingSettingsResponse updateDomainOpenTrackingSettings(@Param("domain") String domain, OpenTrackingSettingsRequest request);
+
+    /**
+     * Update open tracking settings (active only). For active + place_at_the_top use {@link #updateDomainOpenTrackingSettings(String, OpenTrackingSettingsRequest)}.
      *
      * @param domain Name of the domain
      * @param active {@link YesNo}
@@ -336,9 +352,7 @@ public interface MailgunDomainsApi extends MailgunApi {
                                                                               @Param(value = "active", expander = EnumExpander.class) YesNo active);
 
     /**
-     * <p>
-     * Updates the open tracking settings for a domain.
-     * </p>
+     * Update open tracking settings (raw response).
      *
      * @param domain Name of the domain
      * @param active {@link YesNo}
@@ -350,19 +364,23 @@ public interface MailgunDomainsApi extends MailgunApi {
                                                            @Param(value = "active", expander = EnumExpander.class) YesNo active);
 
     /**
-     * <p>
-     * Updates the click tracking settings for a domain.
-     * </p>
+     * Update open tracking settings with request (raw response).
+     *
+     * @param domain  Name of the domain
+     * @param request {@link OpenTrackingSettingsRequest}
+     * @return {@link Response}
+     */
+    @Headers("Content-Type: multipart/form-data")
+    @RequestLine("PUT /domains/{domain}/tracking/open")
+    Response updateDomainOpenTrackingSettingsFeignResponse(@Param("domain") String domain, OpenTrackingSettingsRequest request);
+
+    /**
+     * Update click tracking at domain level. Active values: yes, no, htmlonly.
      *
      * @param domain Name of the domain
      * @param active {@link YesNoHtml}
-     *               <p>
-     *               If set to <code>YES</code>, links will be overwritten and pointed to our servers so we can track clicks.
-     *               </p>
-     *               <p>
-     *               If set to <code>HTML_ONLY</code>, links will only be rewritten in the HTML part of a message.
-     *               </p>
      * @return {@link UpdateDomainClickTrackingSettingsResponse}
+     * @see <a href="https://documentation.mailgun.com/docs/mailgun/api-reference/send/mailgun/domain-tracking/put-v3-domains--name--tracking-click">Update click tracking settings</a>
      */
     @Headers("Content-Type: multipart/form-data")
     @RequestLine("PUT /domains/{domain}/tracking/click")
@@ -370,18 +388,10 @@ public interface MailgunDomainsApi extends MailgunApi {
                                                                                 @Param(value = "active", expander = EnumExpander.class) YesNoHtml active);
 
     /**
-     * <p>
-     * Updates the click tracking settings for a domain.
-     * </p>
+     * Update click tracking (raw response).
      *
      * @param domain Name of the domain
      * @param active {@link YesNoHtml}
-     *               <p>
-     *               If set to <code>YES</code>, links will be overwritten and pointed to our servers so we can track clicks.
-     *               </p>
-     *               <p>
-     *               If set to <code>HTML_ONLY</code>, links will only be rewritten in the HTML part of a message.
-     *               </p>
      * @return {@link Response}
      */
     @Headers("Content-Type: multipart/form-data")
@@ -390,22 +400,19 @@ public interface MailgunDomainsApi extends MailgunApi {
                                                             @Param(value = "active", expander = EnumExpander.class) YesNoHtml active);
 
     /**
-     * <p>
-     * Updates unsubscribe tracking settings for a domain.
-     * </p>
+     * Update unsubscribe tracking (active, html_footer, text_footer).
      *
      * @param domain  Name of the domain
      * @param request {@link DomainUnsubscribeConnectionSettingsRequest}
      * @return {@link UpdateDomainUnsubscribeTrackingSettingsResponse}
+     * @see <a href="https://documentation.mailgun.com/docs/mailgun/api-reference/send/mailgun/domain-tracking/put-v3-domains--name--tracking-unsubscribe">Update unsubscribe tracking settings</a>
      */
     @Headers("Content-Type: multipart/form-data")
     @RequestLine("PUT /domains/{domain}/tracking/unsubscribe")
     UpdateDomainUnsubscribeTrackingSettingsResponse updateDomainUnsubscribeConnectionSettings(@Param("domain") String domain, DomainUnsubscribeConnectionSettingsRequest request);
 
     /**
-     * <p>
-     * Updates unsubscribe tracking settings for a domain.
-     * </p>
+     * Update unsubscribe tracking (raw response).
      *
      * @param domain  Name of the domain
      * @param request {@link DomainUnsubscribeConnectionSettingsRequest}
@@ -414,5 +421,59 @@ public interface MailgunDomainsApi extends MailgunApi {
     @Headers("Content-Type: multipart/form-data")
     @RequestLine("PUT /domains/{domain}/tracking/unsubscribe")
     Response updateDomainUnsubscribeConnectionSettingsFeignResponse(@Param("domain") String domain, DomainUnsubscribeConnectionSettingsRequest request);
+
+    /**
+     * <p>
+     * Update DKIM authority: delegate domain authority to another domain or set domain as its own authority (default).
+     * </p>
+     *
+     * @param domain  Name of the domain
+     * @param request {@link DkimAuthorityRequest} (self: true = domain is authority for itself, false = use root domain authority)
+     * @return {@link DkimAuthorityResponse}
+     * @see <a href="https://documentation.mailgun.com/docs/mailgun/api-reference/send/mailgun/domain-keys/put-v3-domains--name--dkim-authority">Update DKIM authority</a>
+     */
+    @Headers("Content-Type: multipart/form-data")
+    @RequestLine("PUT /domains/{domain}/dkim_authority")
+    DkimAuthorityResponse updateDkimAuthority(@Param("domain") String domain, DkimAuthorityRequest request);
+
+    /**
+     * <p>
+     * Update DKIM authority (raw response).
+     * </p>
+     *
+     * @param domain  Name of the domain
+     * @param request {@link DkimAuthorityRequest}
+     * @return {@link Response}
+     */
+    @Headers("Content-Type: multipart/form-data")
+    @RequestLine("PUT /domains/{domain}/dkim_authority")
+    Response updateDkimAuthorityFeignResponse(@Param("domain") String domain, DkimAuthorityRequest request);
+
+    /**
+     * <p>
+     * Update DKIM selector for the domain. Selector must be unique among keys.
+     * </p>
+     *
+     * @param domain  Name of the domain
+     * @param request {@link DkimSelectorRequest} (dkim_selector; omit to leave unchanged)
+     * @return {@link ResponseWithMessage}
+     * @see <a href="https://documentation.mailgun.com/docs/mailgun/api-reference/send/mailgun/domain-keys/put-v3-domains--name--dkim-selector">Update a DKIM selector</a>
+     */
+    @Headers("Content-Type: multipart/form-data")
+    @RequestLine("PUT /domains/{domain}/dkim_selector")
+    ResponseWithMessage updateDkimSelector(@Param("domain") String domain, DkimSelectorRequest request);
+
+    /**
+     * <p>
+     * Update DKIM selector (raw response).
+     * </p>
+     *
+     * @param domain  Name of the domain
+     * @param request {@link DkimSelectorRequest}
+     * @return {@link Response}
+     */
+    @Headers("Content-Type: multipart/form-data")
+    @RequestLine("PUT /domains/{domain}/dkim_selector")
+    Response updateDkimSelectorFeignResponse(@Param("domain") String domain, DkimSelectorRequest request);
 
 }

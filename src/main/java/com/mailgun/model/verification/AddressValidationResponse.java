@@ -72,4 +72,33 @@ public class AddressValidationResponse {
     @JsonProperty("risk")
     String risk;
 
+    /**
+     * <p>
+     * Suggested correction when the domain looks like a typo of a well-known one,
+     * for example <code>user@gmial.com</code> yielding <code>user@gmail.com</code>.
+     * <code>null</code> when no suggestion applies.
+     * </p>
+     */
+    @JsonProperty("did_you_mean")
+    String didYouMean;
+
+    /**
+     * <p>
+     * The base address when the validated address is an alias, for example
+     * <code>user@example.com</code> for <code>user+tag@example.com</code>.
+     * <code>null</code> when the address is not an alias.
+     * </p>
+     */
+    @JsonProperty("root_address")
+    String rootAddress;
+
+    /**
+     * <p>
+     * Engagement data of the address. Only populated for accounts subscribed to
+     * Mailgun's engagement data.
+     * </p>
+     */
+    @JsonProperty("engagement")
+    Engagement engagement;
+
 }

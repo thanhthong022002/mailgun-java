@@ -66,7 +66,7 @@ The recommended way to use the **Mailgun Java SDK** in your project:
 
 [Choose version you need](https://search.maven.org/search?q=g:%22com.mailgun%22%20AND%20a:%22mailgun-java%22)
 
-Maven.
+Maven.[settings.xml](../../Users/mdmytra/.m2/settings.xml)
 
 Add the following to your `pom.xml`:
 
@@ -76,7 +76,7 @@ Add the following to your `pom.xml`:
   <dependency>
     <groupId>com.mailgun</groupId>
     <artifactId>mailgun-java</artifactId>
-    <version>2.0.0</version>
+    <version>2.4.2</version>
   </dependency>
   ...
 </dependencies>
@@ -85,7 +85,7 @@ Add the following to your `pom.xml`:
 Gradle Groovy DSL .
 
 ```xml
-implementation 'com.mailgun:mailgun-java:2.0.0'
+implementation 'com.mailgun:mailgun-java:2.4.2'
 ```
 
 

@@ -5,17 +5,62 @@ All _notable_ changes to this project will be documented in this file.
 The format is based on _[Keep a Changelog][keepachangelog]_, and this project
 adheres to _[Semantic Versioning][semver]_.
 
-## [10.0.5] (released: 2025-07-28)
-### Updated
-- Update logitem model. (revert back to string userVariables)
+## [2.4.2-xomad-1] (released: 2026-08-13)
+### Added
+- `AddressValidationResponse.didYouMean` / `.rootAddress` / `.engagement` — the `did_you_mean`,
+  `root_address` and `engagement` fields that `GET /v4/address/validate` returns but the model
+  did not carry. `engagement` is the new `Engagement` model (`is_bot`, `engaged`, `engagement`).
 
-## [10.0.4] (released: 2025-07-28)
-### Updated
-- Update logitem model.
+### Changed (xomad build)
+- Version suffix `-xomad-N`; publishes to the internal Nexus rather than Sonatype Central.
+- Kept `Message.xoEmailIdOnHeader` (`h:X-Email-ID`) from the previous xomad build.
 
-## [10.0.3] (released: 2025-07-24)
+## [2.4.2] (released: 2026-07-31)
 ### Updated
-- Add logs api.
+- Updated and sync Key API
+- Updated and sync Account Management API
+- Updated and sync Custom Message Limit API
+- Updated and sync Subaccounts API
+- Updated and sync IP Address Warmup API
+- Updated IPs API
+- Added Dynamic IP Pools API
+- Added IP Pools API
+- Updated Domain Templates API
+- Updated Account Templates API
+- Update and sync Mailing Lists API
+- Update and sync Suppressions API
+- Update and sync Limits API
+- Update and sync Send Alerts API
+
+## [2.4.1] (released: 2026-04-17)
+### Updated
+- Updated Send Message API
+
+## [2.4.0] (released: 2026-02-24)
+### Updated
+- Updated Message API
+- Updated Domains API
+- Updated Domains Key API
+- Updated Domain Tracking API
+- Added DKIM Security API
+
+## [2.3.0] (released: 2026-01-24)
+### Updated
+- Added deliver within header
+
+## [2.2.1] (released: 2025-12-24)
+### Updated
+- Added deliver within header
+
+## [2.1.1] (released: 2025-11-24)
+### Updated
+- Added Log API
+- Updated unit tests
+
+## [2.1.0] (released: 2025-08-26)
+### Updated
+- Added Log API
+- Updated unit tests
 
 ## [2.0.0] (released: 2025-06-11)
 ### Updated
@@ -103,6 +148,13 @@ adheres to _[Semantic Versioning][semver]_.
 - Import a list of complaints from CSV file API
 - Add Import a list of bounces from CSV file API
 
+[2.4.2]: https://github.com/mailgun/mailgun-java/compare/v2.4.1...v2.4.2
+[2.4.1]: https://github.com/mailgun/mailgun-java/compare/v2.4.0...v2.4.1
+[2.4]: https://github.com/mailgun/mailgun-java/compare/v2.3.0...v2.4.0
+[2.3.0]: https://github.com/mailgun/mailgun-java/compare/v2.2.1...v2.3.0
+[2.2.1]: https://github.com/mailgun/mailgun-java/compare/v2.1.1...v2.2.1
+[2.1.1]: https://github.com/mailgun/mailgun-java/compare/v2.1.0...v2.1.1
+[2.1.0]: https://github.com/mailgun/mailgun-java/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/mailgun/mailgun-java/compare/v1.1.6...v2.0.0
 [1.1.6]: https://github.com/mailgun/mailgun-java/compare/v1.1.5...v1.1.6
 [1.1.5]: https://github.com/mailgun/mailgun-java/compare/v1.1.4...v1.1.5

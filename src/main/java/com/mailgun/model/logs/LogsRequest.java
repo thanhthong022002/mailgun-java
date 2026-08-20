@@ -2,99 +2,92 @@ package com.mailgun.model.logs;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.mailgun.model.Filter;
+
+import java.util.Set;
+
 import lombok.Builder;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 
-import java.util.List;
-import java.util.Map;
-
 /**
  * <p>
- * Logs request for Mailgun Logs API.
+ * Logs request.
  * </p>
  *
- * @see <a href="https://documentation.mailgun.com/docs/mailgun/api-reference/openapi-final/logs/post-v1-analytics-logs">Mailgun Logs API</a>
+ * @see <a href="https://documentation.mailgun.com/docs/mailgun/api-reference/send/mailgun/logs/post-v1-analytics-logs#logs/post-v1-analytics-logs/request/body">Logs</a>
  */
 @Value
 @Builder
 @Jacksonized
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class LogsRequest {
+
     /**
+     * <p>
      * The start date (default: 1 day before current time). Must be in RFC 2822 format: https://datatracker.ietf.org/doc/html/rfc2822.html#page-14
-     * Example: "Mon, 08 Jul 2024 00:00:00 -0000"
+     * </p>
      */
     String start;
 
     /**
+     * <p>
      * The end date (default: current time). Must be in RFC 2822 format: https://datatracker.ietf.org/doc/html/rfc2822.html#page-14
-     * Example: "Fri, 12 Jul 2024 00:00:00 -0000"
+     * </p>
      */
     String end;
 
     /**
-     * The set of events to include. Array of event type strings.
-     * Example: ["delivered", "failed"]
+     * <p>
+     * A duration in the format of '1d' '2h'. If provided, it is calculated from the end date and overwrites the start date.
+     * </p>
      */
-    List<String> events;
+    String duration;
 
     /**
-     * Optional set of analytics metric events. Will be converted into corresponding events.
-     * Example: ["accepted", "opened"]
+     * <p>
+     * The set of events to include.
+     * </p>
+     */
+    Set<String> events;
+
+    /**
+     * <p>
+     * Optional set of analytics metric events. Will be converted into corresponding.
+     * </p>
      */
     @JsonProperty("metric_events")
-    List<String> metricEvents;
+    Set<String> metricEvents;
 
     /**
-     * Filters to apply to the query. See documentation for filter object structure.
-     * Example: { "AND": [ { "attribute": "domain", "comparator": "=", "values": [{ "label": "example.com", "value": "example.com" }] } ] }
+     * <p>
+     * Filters to apply to the query.
+     * </p>
+     * {@link Filter}
      */
-    Map<String, Object> filter;
+    Filter filter;
 
     /**
-     * Include logs from all subaccounts. Default: false.
+     * <p>
+     * Include logs from all subaccounts.
+     * </p>
      */
     @JsonProperty("include_subaccounts")
     Boolean includeSubaccounts;
 
     /**
-     * Include total number of log entries. Default: false.
+     * <p>
+     * Include total number of log entries.
+     * </p>
      */
     @JsonProperty("include_totals")
     Boolean includeTotals;
 
     /**
-     * Pagination object. Controls sorting, page token, and limit.
-     */
-    Pagination pagination;
-
-    /**
      * <p>
-     * Pagination object for Mailgun Logs API.
+     * Pagination options.
      * </p>
-     * <ul>
-     *   <li>sort: Colon-separated value indicating column name and sort direction, e.g. 'timestamp:asc'.</li>
-     *   <li>token: Opaque string for pagination, returned by previous response.</li>
-     *   <li>limit: Maximum number of items to return.</li>
-     * </ul>
+     * {@link LogsPagination}
      */
-    @Value
-    @Builder
-    @Jacksonized
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class Pagination {
-        /**
-         * Colon-separated value indicating column name and sort direction, e.g. 'timestamp:asc'.
-         */
-        String sort;
-        /**
-         * Opaque string for pagination, returned by previous response.
-         */
-        String token;
-        /**
-         * Maximum number of items to return.
-         */
-        Integer limit;
-    }
-} 
+    LogsPagination pagination;
+}
