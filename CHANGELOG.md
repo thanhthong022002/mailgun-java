@@ -5,6 +5,12 @@ All _notable_ changes to this project will be documented in this file.
 The format is based on _[Keep a Changelog][keepachangelog]_, and this project
 adheres to _[Semantic Versioning][semver]_.
 
+## [2.4.2-xomad-2] (released: 2026-08-13)
+### Removed
+- `Message.xoEmailIdOnHeader` (`h:X-Email-ID`). It duplicated `Message.headers`, which is
+  `@CustomProperties(prefix = "h:")` and emits any custom header — callers use
+  `.headers(Map.of("X-Email-ID", id))`. `MessageCustomHeaderTest` pins that behaviour.
+
 ## [2.4.2-xomad-1] (released: 2026-08-13)
 ### Added
 - `AddressValidationResponse.didYouMean` / `.rootAddress` / `.engagement` — the `did_you_mean`,

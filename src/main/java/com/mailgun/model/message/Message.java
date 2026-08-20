@@ -381,9 +381,6 @@ public class Message {
     @CustomProperties(prefix = "h:")
     Map<String, String> headers;
 
-    @FormProperty("h:X-Email-ID")
-    String xoEmailIdOnHeader;
-
     public static MessageBuilder builder() {
         return new CustomMessageBuilder();
     }
